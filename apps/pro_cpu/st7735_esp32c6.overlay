@@ -61,11 +61,11 @@
 		
 		st7789v_st7789v_waveshare_172_320: st7789v@0 {
 			compatible = "sitronix,st7789v";
-			mipi-max-frequency = <50000000>;
+			mipi-max-frequency = <1000000000>;
 			reg = <0>;
 			width = <172>;
 			height = <320>;
-			x-offset = <32>;
+			x-offset = <34>;
 			y-offset = <0>;
 			vcom = <0x19>;
 			gctrl = <0x35>;

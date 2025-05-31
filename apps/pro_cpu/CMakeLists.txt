@@ -1,6 +1,11 @@
 # cmake boilerplate
 cmake_minimum_required(VERSION 3.30.2)
 
+# add modules
+list(APPEND EXTRA_ZEPHYR_MODULES
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../modules/AnimatedGIF
+)
+
 # import custom board package
 # list(APPEND BOARD_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../)
 
