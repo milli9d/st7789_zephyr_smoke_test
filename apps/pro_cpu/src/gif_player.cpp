@@ -17,19 +17,18 @@ namespace gify {
 
 #define GIF_PLAYER_STACK_SIZE 2048u
 
-#define ZEPHYR_USER_NODE DT_PATH(zephyr_user)
-#define TFT_LED_GPIO     GPIO_DT_SPEC_GET(ZEPHYR_USER_NODE, tft_led_gpios)
+#define ZEPHYR_USER_NODE      DT_PATH(zephyr_user)
+#define TFT_LED_GPIO          GPIO_DT_SPEC_GET(ZEPHYR_USER_NODE, tft_led_gpios)
 
 AnimatedGIF _gif;
-uint8_t ucFrameBuffer[(TFT_W * TFT_H) +
-                      ((TFT_W * TFT_H) *
-                       BPP_COOKED)]; // holds current canvas as 8-bpp and 16-bit
-                                     // output after that
+uint8_t     ucFrameBuffer[(TFT_W * TFT_H) +
+                      ((TFT_W * TFT_H) * BPP_COOKED)]; // holds current canvas as 8-bpp and 16-bit
+                                                           // output after that
 
 K_THREAD_STACK_DEFINE(gif_player_stack, GIF_PLAYER_STACK_SIZE);
 struct k_thread gif_player_thread_data;
 
-void gif_player::_run(void* p0, void* p1, void* p2)
+void            gif_player::_run(void* p0, void* p1, void* p2)
 {
     // Cast the argument to the correct type
     gif_player* player = static_cast<gif_player*>(p0);
@@ -62,9 +61,8 @@ void gif_player::_run(void* p0, void* p1, void* p2)
     }
 
     while (1) {
-        _gif.begin(
-            GIF_PALETTE_RGB565_BE); // Choose the "OLED" version of 1-bpp
-                                    // output (vertical bytes, LSB on top)
+        _gif.begin(GIF_PALETTE_RGB565_BE); // Choose the "OLED" version of 1-bpp
+                                           // output (vertical bytes, LSB on top)
 
         // For 1-bit output, we can pass NULL for the GIFDraw method pointer; it
         // won't be needed
@@ -74,38 +72,33 @@ void gif_player::_run(void* p0, void* p1, void* p2)
             _gif.setFrameBuf(ucFrameBuffer);
             // We want the library to generate ready-made (COOKED) pixels
             _gif.setDrawType(GIF_DRAW_COOKED);
-            printf("Successfully opened GIF; Canvas size = %d x %d\n",
-                   _gif.getCanvasWidth(), _gif.getCanvasHeight());
+            printf("Successfully opened GIF; Canvas size = %d x %d\n", _gif.getCanvasWidth(),
+                   _gif.getCanvasHeight());
             GIFINFO info = {};
             _gif.getInfo(&info);
             printf("Number of frames = %d\n"
                    "Duration [ms] = %d\n"
                    "Max Delay [ms] = %d]\n"
                    "Min Delay [ms] = %d]\n",
-                   info.iFrameCount, info.iDuration, info.iMaxDelay,
-                   info.iMinDelay);
+                   info.iFrameCount, info.iDuration, info.iMaxDelay, info.iMinDelay);
 
 #ifndef FRAME_RATE
-            uint64_t avg_frame_delay_us =
-                ((info.iMaxDelay + info.iMinDelay) / 2u) * 1000u;
+            uint64_t avg_frame_delay_us = ((info.iMaxDelay + info.iMinDelay) / 2u) * 1000u;
 #else
             uint64_t avg_frame_delay_us = 1000000u / FRAME_RATE;
 #endif
 
             int count = 0;
-            while (_gif.playFrame(
-                false, NULL)) { // live dangerously; run unthrottled :)
-                uint64_t start_time_ticks = k_uptime_get();
-                uint16_t* current_frame =
-                    (uint16_t*)(ucFrameBuffer + (TFT_W * TFT_H));
+            while (_gif.playFrame(false, NULL)) { // live dangerously; run unthrottled :)
+                uint64_t  start_time_ticks = k_uptime_get();
+                uint16_t* current_frame    = (uint16_t*)(ucFrameBuffer + (TFT_W * TFT_H));
 
-                struct display_buffer_descriptor _desc = {
-                    .buf_size = ((TFT_W * TFT_H) * BPP_COOKED),
-                    .width = TFT_W,
-                    .height = TFT_H,
-                    .pitch = TFT_W,
-                    .frame_incomplete = false
-                };
+                struct display_buffer_descriptor _desc = { .buf_size =
+                                                               ((TFT_W * TFT_H) * BPP_COOKED),
+                                                           .width            = TFT_W,
+                                                           .height           = TFT_H,
+                                                           .pitch            = TFT_W,
+                                                           .frame_incomplete = false };
 
                 rc = display_write(dev, 0u, 0u, &_desc, (void*)current_frame);
                 if (rc != 0) {
@@ -113,11 +106,9 @@ void gif_player::_run(void* p0, void* p1, void* p2)
                 }
 
                 // make things run at proper frame rate
-                uint64_t time_spent_us =
-                    k_ticks_to_us_ceil64(k_uptime_get() - start_time_ticks);
+                uint64_t time_spent_us = k_ticks_to_us_ceil64(k_uptime_get() - start_time_ticks);
                 if (time_spent_us > avg_frame_delay_us) {
-                    printf("Frame %d took too long to draw: %lld us\n", count,
-                           time_spent_us);
+                    printf("Frame %d took too long to draw: %lld us\n", count, time_spent_us);
                     continue;
                 }
                 k_sleep(K_USEC(avg_frame_delay_us - time_spent_us));
@@ -134,8 +125,8 @@ gif_player::gif_player()
 
     // Create the task for the gif_player
     k_thread_create(&gif_player_thread_data, gif_player_stack,
-                    K_THREAD_STACK_SIZEOF(gif_player_stack), _run, this, NULL,
-                    NULL, K_PRIO_PREEMPT(0), 0, K_NO_WAIT);
+                    K_THREAD_STACK_SIZEOF(gif_player_stack), _run, this, NULL, NULL,
+                    K_PRIO_PREEMPT(0), 0, K_NO_WAIT);
     k_thread_name_set(&gif_player_thread_data, "GIF_PLAYER");
     k_thread_start(&gif_player_thread_data);
 }
